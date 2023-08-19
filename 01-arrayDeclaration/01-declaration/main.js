@@ -1,0 +1,1 @@
+const friends = ['Torz','Mai','Pete','Champ','Mix'];

@@ -1,12 +1,3 @@
-// 1. จำนวน transaction ทั้งหมด
-// 2. จำนวนลูกค้าที่แตกต่างกัน มีใครบ้าง แต่ละคนซื้อไปยอดรวมกันเท่าไหร่ กี่เครื่อง
-// 3. ยอดขายทั้งหมด (หลังหัก discount)
-// 4. สินค้าที่ถูกขายมี่กี่ยี่ห้อ แต่ละยี่ห้อขายไปกี่เครื่อง และ ยอดรวมเท่าไหร่
-// 5. สินค้าที่ถูกขายมีกี่รุ่นในแต่ละยี่ห้อ แต่ละรุ่นขายไปกี่เครื่อง และ ยอดรวมเท่าไหร่
-// 6. หายอดรวมของการจ่ายแต่ละประเภท (Cash, Credit, ...)
-// 7. หายอดรวมในแต่ละวัน
-// 8. เรียงยอดขายของแต่ละรุ่นจากมากไปน้อย
-// 9. เรียงลูกค้าที่ซื้อมากที่สุดจากมากไปน้อย
 
 const sales = [
   {
@@ -677,3 +668,292 @@ const sales = [
     type: 'Cash'
   }
 ];
+
+// 1. จำนวน transaction(ธุรกรรม) ทั้งหมด
+let result1 = sales.length
+console.log(result1) //54
+
+// 2. จำนวนลูกค้าที่แตกต่างกัน มีใครบ้าง แต่ละคนซื้อไปยอดรวมกันเท่าไหร่ กี่เครื่อง
+/* Expect result
+result=[
+  {name: 'Sun', sumPay: 86099, countProduct: 3},
+  {name: 'Tle', sumPay: 109700, countProduct: 3},
+  {name: 'Beer', sumPay: 51800, countProduct: 2},
+  ........
+]
+*/
+let result2 = sales.reduce((acc = [], obj) => {
+  //  obj is 
+  //  id: 54,
+  //   product: {
+  //     id: 14,
+  //     name: 'iPhone',
+  //     model: '12 Mini',
+  //     unitPrice: 25900
+  //   },
+  //   saleDate: '07-01-2021',
+  //   customer: 'Um',
+  //   discount: 0.1,
+  //   type: 'Cash'
+  let newCustomer = true;
+  let countIndex = -1;
+  for (let accObj of acc) {
+    countIndex++;
+    if (accObj.name == obj.customer) {
+      newCustomer = false;
+      break;
+    }
+  }
+  // New customer
+  if (newCustomer) {
+    const addObj = {};
+    addObj.name = obj.customer;
+    addObj.sumPay = obj.product.unitPrice * (1 - (obj.discount || 0)).toFixed(0);
+    addObj.countProduct = 1;
+    acc.push(addObj);
+    return acc;
+  } else {
+    acc[countIndex].countProduct++;
+    acc[countIndex].sumPay += obj.product.unitPrice * (1 - (obj.discount || 0)).toFixed(0);
+    return acc;
+  }
+
+}, [])
+console.log(result2)
+// จำนวนลูกค้า =26 คน อื่นๆดูใน console
+
+// 3. ยอดขายทั้งหมด (หลังหัก discount)
+let totalSale = result2.reduce((acc, obj) => acc + obj.sumPay, 0)
+console.log(totalSale) //1389707
+
+// 4. สินค้าที่ถูกขายมี่กี่ยี่ห้อ แต่ละยี่ห้อขายไปกี่เครื่อง และ ยอดรวมเท่าไหร่
+/* Expect result
+result=[
+  {brand: banana,countProduct: 5,sumSale: 500000},
+  {brand: banana,countProduct: 5,sumSale: 500000},
+  {brand: banana,countProduct: 5,sumSale: 500000},
+  .......
+]
+*/
+let result4 = sales.reduce((acc = [], obj) => {
+  //  obj is 
+  //  id: 54,
+  //   product: {
+  //     id: 14,
+  //     name: 'iPhone',
+  //     model: '12 Mini',
+  //     unitPrice: 25900
+  //   },
+  //   saleDate: '07-01-2021',
+  //   customer: 'Um',
+  //   discount: 0.1,
+  //   type: 'Cash'
+  let newBrand = true;
+  let countIndex = -1;
+  for (let accObj of acc) {
+    countIndex++;
+    if (accObj.brand == obj.product.name) {
+      newBrand = false;
+      break;
+    }
+  }
+  // New customer
+  if (newBrand) {
+    const addObj = {};
+    addObj.brand = obj.product.name;
+    addObj.sumSale = obj.product.unitPrice * (1 - (obj.discount || 0)).toFixed(0);
+    addObj.countProduct = 1;
+    acc.push(addObj);
+    return acc;
+  } else {
+    acc[countIndex].countProduct++;
+    acc[countIndex].sumSale += obj.product.unitPrice * (1 - (obj.discount || 0)).toFixed(0);
+    return acc;
+  }
+
+}, [])
+console.log(result4)
+// จำนวนยี่ห้อ =5 คน อื่นๆดูใน console
+
+// 5. สินค้าที่ถูกขายมีกี่รุ่นในแต่ละยี่ห้อ แต่ละรุ่นขายไปกี่เครื่อง และ ยอดรวมเท่าไหร่
+/* Expect result
+result={
+  iphone: [{model: 12,countProduct: 5,sumSale: 500000},{model: 13,countProduct: 5,sumSale: 500000}],
+  samsung: [{model: 12,countProduct: 5,sumSale: 500000},{model: 13,countProduct: 5,sumSale: 500000}],
+  oppo: [{model: 12,countProduct: 5,sumSale: 500000},{model: 13,countProduct: 5,sumSale: 500000}],
+  .......
+}
+*/
+// Try to sort model
+/*
+const iPhone = sales.reduce((acc = [], obj) => {
+  // obj =
+  // {
+  //   id: 54,
+  //   product: {
+  //     id: 14,
+  //     name: 'iPhone',
+  //     model: '12 Mini',
+  //     unitPrice: 25900
+  //   },
+  //   saleDate: '07-01-2021',
+  //   customer: 'Um',
+  //   discount: 0.1,
+  //   type: 'Cash'
+  // }
+  if (obj.product.name == 'iPhone') {
+    // newModelCheck
+    let newModel = true;
+    let countIndex = -1;
+    for (let accObj of acc) {
+      countIndex++;
+      if (accObj.model == obj.product.model) {
+        newModel = false;
+        break;
+      }
+    }
+    if(newModel){
+      newObj = {}
+      newObj.model =obj.product.model;
+      newObj.countProduct=1;
+      newObj.sumSale=obj.product.unitPrice * (1 - (obj.discount || 0)).toFixed(0);
+      acc.push(newObj)
+    }else{
+      acc[countIndex].countProduct++;
+      acc[countIndex].sumSale += obj.product.unitPrice * (1 - (obj.discount || 0)).toFixed(0);
+    }
+    return acc;
+  }
+  return acc;
+}, [])
+*/
+
+//######### Make it to function ###########
+function sortModel(model){
+  const summary=sales.reduce((acc = [], obj) => {
+    if (obj.product.name == model) {
+      // newModelCheck
+      let newModel = true;
+      let countIndex = -1;
+      for (let accObj of acc) {
+        countIndex++;
+        if (accObj.model == obj.product.model) {
+          newModel = false;
+          break;
+        }
+      }
+      if(newModel){
+        newObj = {}
+        newObj.model =obj.product.model;
+        newObj.countProduct=1;
+        newObj.sumSale=obj.product.unitPrice * (1 - (obj.discount || 0)).toFixed(0);
+        acc.push(newObj)
+      }else{
+        acc[countIndex].countProduct++;
+        acc[countIndex].sumSale += obj.product.unitPrice * (1 - (obj.discount || 0)).toFixed(0);
+      }
+      return acc;
+    }
+    return acc;
+  }, [])
+  return summary;
+}
+const iPhone=sortModel('iPhone')
+const Samsung=sortModel('Samsung')
+const Oppo=sortModel('Oppo')
+const Xiaomi=sortModel('Xiaomi')
+const Vivo=sortModel('Vivo')
+
+
+const result5 = {iPhone,Samsung,Oppo,Xiaomi,Vivo}
+console.log(result5) // look in console
+
+// 6. หายอดรวมของการจ่ายแต่ละประเภท (Cash, Credit, ...)
+let result6 = sales.reduce((acc = [], obj) => {
+  //  obj is 
+  //  id: 54,
+  //   product: {
+  //     id: 14,
+  //     name: 'iPhone',
+  //     model: '12 Mini',
+  //     unitPrice: 25900
+  //   },
+  //   saleDate: '07-01-2021',
+  //   customer: 'Um',
+  //   discount: 0.1,
+  //   type: 'Cash'
+  let newType = true;
+  let countIndex = -1;
+  for (let accObj of acc) {
+    countIndex++;
+    if (accObj.type == obj.type) {
+      newType = false;
+      break;
+    }
+  }
+  // New type
+  if (newType) {
+    const addObj = {};
+    addObj.type = obj.type;
+    addObj.totalPayment = obj.product.unitPrice * (1 - (obj.discount || 0)).toFixed(0);
+    acc.push(addObj);
+    return acc;
+  } else {
+    acc[countIndex].totalPayment += obj.product.unitPrice * (1 - (obj.discount || 0)).toFixed(0);
+    return acc;
+  }
+
+}, [])
+console.log(result6)
+
+// 7. หายอดรวมในแต่ละวัน
+let result7 = sales.reduce((acc = [], obj) => {
+  //  obj is 
+  //  id: 54,
+  //   product: {
+  //     id: 14,
+  //     name: 'iPhone',
+  //     model: '12 Mini',
+  //     unitPrice: 25900
+  //   },
+  //   saleDate: '07-01-2021',
+  //   customer: 'Um',
+  //   discount: 0.1,
+  //   type: 'Cash'
+  let newDate = true;
+  let countIndex = -1;
+  for (let accObj of acc) {
+    countIndex++;
+    if (accObj.saleDate == obj.saleDate) {
+      newDate = false;
+      break;
+    }
+  }
+  // New type
+  if (newDate) {
+    const addObj = {};
+    addObj.saleDate = obj.saleDate;
+    addObj.totalPayment = obj.product.unitPrice * (1 - (obj.discount || 0)).toFixed(0);
+    acc.push(addObj);
+    return acc;
+  } else {
+    acc[countIndex].totalPayment += obj.product.unitPrice * (1 - (obj.discount || 0)).toFixed(0);
+    return acc;
+  }
+
+}, [])
+console.log(result7)
+
+// 8. เรียงยอดขายของแต่ละรุ่นจากมากไปน้อย
+const allModelDetail=[].concat(iPhone,Samsung,Oppo,Xiaomi,Vivo)
+console.log(allModelDetail)
+// เรียงจากมากไปน้อย
+const sortModelFn= (a,b) => -(a.sumSale-b.sumSale) //ใส่ - เพราะให้มันเรียงจากมากไปน้อย
+allModelDetail.sort(sortModelFn);
+console.log(allModelDetail)
+
+
+// 9. เรียงลูกค้าที่ซื้อ มากที่สุดจากมากไปน้อย
+const sortCustomerFn= (a,b) => -(a.sumPay-b.sumPay) //ใส่ - เพราะให้มันเรียงจากมากไปน้อย
+result2.sort(sortCustomerFn);
+console.log(result2)
