@@ -946,7 +946,6 @@ console.log(result7)
 
 // 8. เรียงยอดขายของแต่ละรุ่นจากมากไปน้อย
 const allModelDetail=[].concat(iPhone,Samsung,Oppo,Xiaomi,Vivo)
-console.log(allModelDetail)
 // เรียงจากมากไปน้อย
 const sortModelFn= (a,b) => -(a.sumSale-b.sumSale) //ใส่ - เพราะให้มันเรียงจากมากไปน้อย
 allModelDetail.sort(sortModelFn);
